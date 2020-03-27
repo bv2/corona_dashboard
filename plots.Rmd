@@ -1,0 +1,148 @@
+---
+title: "Monitoring corona developments"
+author: "Britta Velten"
+date: "3/27/2020"
+output: BiocStyle::html_document
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(magrittr)
+```
+
+# Data input
+Data is obtained from [here](https://github.com/CSSEGISandData/COVID-19).
+```{r, warning=FALSE, message=FALSE}
+datadir <- "COVID-19/csse_covid_19_data/csse_covid_19_daily_reports/"
+fnms <- list.files(datadir)
+fnms <- fnms[grepl("2020", fnms)]
+df <- lapply(fnms, function(fnm){
+  df <- read.delim(file.path(datadir, fnm), sep = ",")
+  df$date = paste0(strsplit(sub("\\.csv","", fnm),"-")[[1]][c(3,1,2)], collapse = "-") # reformat date
+  df
+}) %>% bind_rows()
+df %<>% mutate(date = as.Date(date))
+
+df %<>% mutate(country = ifelse(is.na(Country.Region), Country_Region, Country.Region))
+# df %<>% mutate(updated = ifelse(is.na(Last.Update),
+#                                substr(Last_Update,1,10),
+#                                paste0(strsplit(substr(Last.Update,1,9),"/")[[1]][c(3,1,2)], collapse = "-"))) 
+# df %<>% mutate(updated = as.Date(updated))
+# df %<>% filter(date == updated)
+
+df %<>% mutate(country = ifelse(country == "United Kingdom", "UK", country))
+df %<>% mutate(country = ifelse(country == "Iran (Islamic Republic of)", "Iran", country))
+df %<>% mutate(country = ifelse(country == "Republic of Korea", "South Korea", country))
+
+
+contrs <- c("Germany", "UK", "Spain", "US", "Italy", "Switzerland", "Austria")
+
+# aggregate state-wise reports
+df <- df %>% group_by(country, date) %>%
+  summarise(Confirmed = sum(Confirmed),
+            Deaths = sum(Deaths),
+            Recovered = sum(Recovered)) %>% ungroup()
+```
+
+# Number of cases and deaths by country
+```{r, warning=FALSE, message=FALSE}
+# Confirmed
+df %>% filter(country %in% contrs, date > '2020-03-01') %>%
+  ggplot(aes(x=date, y = Confirmed, col = country)) +
+  geom_line() + ggtitle("Total cases")
+
+# Deaths
+df %>% filter(country %in% contrs, date > '2020-03-01') %>%
+  ggplot(aes(x=date, y = Deaths, col = country)) +
+  geom_line() + ggtitle("Total deaths")
+
+# Death rate
+df %>% filter(country %in% contrs, date > '2020-03-01') %>% 
+  ggplot(aes(x=date, y = 100 * Deaths/Confirmed, col = country)) +
+  geom_line()+ ggtitle("Death rate")+ ylab("Death rate (%)")
+
+
+## Adjust curves to start with 100 cases
+df0 <- df %>% group_by(country) %>%
+  filter(Confirmed > 100) %>% summarise(date0 = min(date))
+df <- left_join(df, df0, by = "country")
+df <- df %>% group_by(country) %>%
+  mutate(daysAfter100Cases = date - date0) %>% ungroup()
+
+# Confirmed
+df %>% filter(country %in% contrs, date > '2020-03-01') %>%
+  ggplot(aes(x=daysAfter100Cases, y = Confirmed, col = country)) +
+  geom_line() + ggtitle("Total cases")
+
+# Deaths
+df %>% filter(country %in% contrs, date > '2020-03-01') %>%
+  ggplot(aes(x=daysAfter100Cases, y = Deaths, col = country)) +
+  geom_line() + ggtitle("Total deaths")
+
+# Death rate
+df %>% filter(country %in% contrs, date > '2020-03-01') %>% 
+  ggplot(aes(x=daysAfter100Cases, y = 100 * Deaths/Confirmed, col = country)) +
+  geom_line()+ ggtitle("Death rate") + ylab("Death rate (%)")
+
+contr2include <- df %>% group_by(country) %>% summarize(max_cases = max(Confirmed)) %>% filter(max_cases > 1000) %>% .$country %>% unique()
+df %<>% filter(country %in% contr2include)
+save(df, file = "out/df.RData")
+```
+Note that the death rates are highly depending on the testing procedure and number of tests in each country.
+
+# Doubling time and the impact of political actions to limit spreading
+Take school closures (https://en.unesco.org/sites/default/files/covid_impact_education.csv) as proxy for when political actions are undertaken to limit the spread of corona.
+```{r}
+schools <- read.delim("~/Documents/projects/corona/school_closures.csv", sep = ",")
+schools %<>% filter(Scale == "National") # only consider nation-wide actions
+schools %<>% mutate(country = as.character(Country))
+schools %<>% mutate(date_closure =as.Date(as.character(Date), tryFormats ="%d/%m/%Y"))
+schools <- schools %>% group_by(country) %>%
+  summarise( date_closure = min(date_closure)) %>% ungroup()
+schools %<>% mutate(country = ifelse(country == "United Kingdom of Great Britain and Northern Ireland", "UK", country))
+```
+
+Caulculate doubling times (take growth rate and doubling times over a window of several days).
+```{r, warning=FALSE, message=FALSE}
+gm_mean = function(a){prod(a, na.rm = TRUE)^(1/length(a))}
+span <- 5
+df_sub <- df %>% filter(country %in% contrs, date > '2020-02-15')
+df_dt <- lapply(unique(df_sub$date), function(d){
+  df_window <- filter(df_sub, date > d - span & date <= d)
+  lapply(unique(df_window$country), function(c){
+    dftmp <- filter(df_window, country == c)
+    if(max(dftmp$date) == d & min(dftmp$Confirmed > 100)) { # only take points with sufficinet hig sample number and time span available
+      ns <- dftmp  %>% arrange(date) %>% .$Confirmed
+      gr_daily <- sapply(1:(span - 1),  function(i) (ns[i+1]/ns[i]))
+      gr_daily[gr_daily == 0] <- NA
+      gr <- gm_mean(gr_daily)
+      data.frame(date = d, country = c, growth_rate =gr, doubling_time = log(2)/log(gr), date0 = unique(dftmp$date0))
+    } else data.frame(date = d, country = c, growth_rate = NA, doubling_time = NA)
+  }) %>% bind_rows()
+}) %>% bind_rows()
+
+
+df_dt %<>% left_join(schools, by = "country")
+```
+
+
+Plot.
+```{r, warning=FALSE, message=FALSE}
+df_dt %>%
+  filter(country %in% contrs, date > '2020-03-01') %>%
+  ggplot(aes(x=date, y = doubling_time, col = country)) +
+  geom_line() + ylab("doubling time (days)") +
+  geom_vline(aes(xintercept = date_closure, col = country), lty = "dashed") +
+  ggrepel::geom_text_repel(aes(x=date_closure, y= 5,
+                               label = ifelse(!is.na(date_closure) & date == date_closure,  country, ""))) +
+  xlab("Date")
+
+df_dt %>% filter(country %in% contrs) %>% ggplot(aes(x=date - date0, y = doubling_time, col = country)) +
+  geom_line() + ylab("doubling time (days)") +
+  geom_vline(aes(xintercept = date_closure - date0, col = country), lty = "dashed") +
+  ggrepel::geom_text_repel(aes(x=date_closure - date0, y= 5,
+                               label = ifelse(!is.na(date_closure) & date == date_closure ,  country, ""))) +
+  xlab("Days after 100 cases")
+save(df_dt, file = "out/df_dt.RData")
+```
+
