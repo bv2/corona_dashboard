@@ -7,7 +7,7 @@ load("../../out/df.RData")
 shinyUI(pageWithSidebar(
   
   # Application title
-  headerPanel("Monitoring the development of Covid-19 (SARS-CoV-2)"),
+  headerPanel("Monitoring Covid-19 (SARS-CoV-2)"),
 
   # Sidebar with a slider input for number of observations
   sidebarPanel(
