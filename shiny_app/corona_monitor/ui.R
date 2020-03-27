@@ -18,7 +18,7 @@ shinyUI(pageWithSidebar(
                 value = as.Date("2020-01-01")),
     checkboxInput("ds100",
                   "Time since 100 cases", FALSE),
-    selectInput("cntrs", NULL , unique(df$country), selected = c("Germany", "Spain", "Italy", "UK"), multiple = TRUE,
+    selectInput("cntrs", NULL , unique(df$country), selected = c("Germany", "Spain", "Italy", "UK", "US"), multiple = TRUE,
                 selectize = TRUE, width = NULL, size = NULL)
   ),
 
