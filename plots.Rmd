@@ -8,6 +8,7 @@ output: BiocStyle::html_document
 ```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(magrittr)
+if(!dir.exists("out")) dir.create("out")
 ```
 
 # Data input
@@ -91,7 +92,7 @@ save(df, file = "out/df.RData")
 Note that the death rates are highly depending on the testing procedure and number of tests in each country.
 
 # Doubling time and the impact of political actions to limit spreading
-Take school closures (https://en.unesco.org/sites/default/files/covid_impact_education.csv) as proxy for when political actions are undertaken to limit the spread of corona.
+Take [school closures](https://en.unesco.org/sites/default/files/covid_impact_education.csv) as proxy for when political actions are undertaken to limit the spread of corona.
 ```{r}
 schools <- read.delim("~/Documents/projects/corona/school_closures.csv", sep = ",")
 schools %<>% filter(Scale == "National") # only consider nation-wide actions
