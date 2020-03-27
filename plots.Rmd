@@ -34,15 +34,16 @@ df %<>% mutate(country = ifelse(is.na(Country.Region), Country_Region, Country.R
 df %<>% mutate(country = ifelse(country == "United Kingdom", "UK", country))
 df %<>% mutate(country = ifelse(country == "Iran (Islamic Republic of)", "Iran", country))
 df %<>% mutate(country = ifelse(country == "Republic of Korea", "South Korea", country))
+df %<>% mutate(country = ifelse(country == "Mainland China", "China", country))
 
 
 contrs <- c("Germany", "UK", "Spain", "US", "Italy", "Switzerland", "Austria")
 
 # aggregate state-wise reports
 df <- df %>% group_by(country, date) %>%
-  summarise(Confirmed = sum(Confirmed),
-            Deaths = sum(Deaths),
-            Recovered = sum(Recovered)) %>% ungroup()
+  summarise(Confirmed = sum(Confirmed, na.rm = TRUE),
+            Deaths = sum(Deaths, na.rm = TRUE),
+            Recovered = sum(Recovered, na.rm = TRUE)) %>% ungroup()
 ```
 
 # Number of cases and deaths by country
@@ -107,7 +108,7 @@ Caulculate doubling times (take growth rate and doubling times over a window of 
 ```{r, warning=FALSE, message=FALSE}
 gm_mean = function(a){prod(a, na.rm = TRUE)^(1/length(a))}
 span <- 5
-df_sub <- df %>% filter(country %in% contrs, date > '2020-02-15')
+df_sub <- df 
 df_dt <- lapply(unique(df_sub$date), function(d){
   df_window <- filter(df_sub, date > d - span & date <= d)
   lapply(unique(df_window$country), function(c){
