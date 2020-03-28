@@ -35,7 +35,7 @@ df %<>% mutate(country = ifelse(country == "United Kingdom", "UK", country))
 df %<>% mutate(country = ifelse(country == "Iran (Islamic Republic of)", "Iran", country))
 df %<>% mutate(country = ifelse(country == "Republic of Korea", "South Korea", country))
 df %<>% mutate(country = ifelse(country == "Mainland China", "China", country))
-
+df %<>% mutate(country = ifelse(country == "Korea, South", "South Korea", country))
 
 contrs <- c("Germany", "UK", "Spain", "US", "Italy", "Switzerland", "Austria")
 
