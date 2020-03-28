@@ -38,7 +38,7 @@ shinyServer(function(input, output) {
     xlab4plottmp <- xlab4plot()
     gg <- dftmp %>% 
       ggplot(aes(x=x, y = Confirmed, col = country)) +
-      geom_line() + ggtitle("Total cases") +xlab(xlab4plottmp) + theme_bw()
+      geom_line() + ggtitle("Total cases") +xlab(xlab4plottmp) + theme_bw(base_size = 15)
     if(plotlogscale()) gg <- gg + scale_y_log10()
     gg
     
@@ -50,7 +50,7 @@ shinyServer(function(input, output) {
     xlab4plottmp <- xlab4plot()
     gg <- dftmp %>% 
       ggplot(aes(x=x, y = Deaths, col = country)) +
-      geom_line() + ggtitle("Total cases") +xlab(xlab4plottmp)+ theme_bw()
+      geom_line() + ggtitle("Total cases") +xlab(xlab4plottmp)+ theme_bw(base_size = 15)
     if(plotlogscale()) gg <- gg + scale_y_log10()
     gg
   })
@@ -62,7 +62,7 @@ shinyServer(function(input, output) {
     xlab4plottmp <- xlab4plot()
     gg <- dftmp %>% 
       ggplot(aes(x=x, y = 100 * Deaths/Confirmed, col = country)) +
-      geom_line()+  ylab("Death rate (%)") + xlab(xlab4plottmp)+ theme_bw() 
+      geom_line()+  ylab("Death rate (%)") + xlab(xlab4plottmp)+ theme_bw(base_size = 15)
    gg
     
   })
@@ -76,7 +76,7 @@ shinyServer(function(input, output) {
       geom_vline(aes(xintercept = x_closure, col = country), lty = "dashed") +
       ggrepel::geom_text_repel(aes(x = x_closure, y= 5,
                                    label = ifelse(!is.na(date_closure) & date == date_closure,  country, ""))) +
-      xlab(xlab4plottmp)+ theme_bw()
+      xlab(xlab4plottmp)+ theme_bw(base_size = 15)
 
    gg1
   })
@@ -90,7 +90,7 @@ shinyServer(function(input, output) {
       geom_vline(aes(xintercept = x_closure, col = country), lty = "dashed") +
       ggrepel::geom_text_repel(aes(x = x_closure, y= 2,
                                    label = ifelse(!is.na(date_closure) & date == date_closure,  country, ""))) +
-      xlab(xlab4plottmp)+ theme_bw()
+      xlab(xlab4plottmp)+ theme_bw(base_size = 15)
     
     gg2
   })
