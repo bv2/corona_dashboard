@@ -88,7 +88,7 @@ shinyServer(function(input, output) {
     gg2 <- ggplot(dftmp, aes(x=x, y = growth_rate, col = country)) +
       geom_line() + ylab("Daily growth rate") +
       geom_vline(aes(xintercept = x_closure, col = country), lty = "dashed") +
-      ggrepel::geom_text_repel(aes(x = x_closure, y= 5,
+      ggrepel::geom_text_repel(aes(x = x_closure, y= 2,
                                    label = ifelse(!is.na(date_closure) & date == date_closure,  country, ""))) +
       xlab(xlab4plottmp)+ theme_bw()
     
