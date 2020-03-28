@@ -6,6 +6,7 @@ load("../../out/df.RData")
 
 shinyServer(function(input, output) {
   
+  
   df_contrs <-  reactive({
     df <- filter(df, country %in% input$cntrs, date > input$start_date)
     if(input$ds100) {
@@ -28,6 +29,8 @@ shinyServer(function(input, output) {
     df_dt
     })
   plotds100 <- reactive({input$ds100})
+  plotlogscale <- reactive({input$logscale})
+  
   
   output$cases <- renderPlot({
     # generate an rnorm distribution and plot it
@@ -36,6 +39,7 @@ shinyServer(function(input, output) {
     gg <- dftmp %>% 
       ggplot(aes(x=x, y = Confirmed, col = country)) +
       geom_line() + ggtitle("Total cases") +xlab(xlab4plottmp) + theme_bw()
+    if(plotlogscale()) gg <- gg + scale_y_log10()
     gg
     
   })
@@ -47,6 +51,7 @@ shinyServer(function(input, output) {
     gg <- dftmp %>% 
       ggplot(aes(x=x, y = Deaths, col = country)) +
       geom_line() + ggtitle("Total cases") +xlab(xlab4plottmp)+ theme_bw()
+    if(plotlogscale()) gg <- gg + scale_y_log10()
     gg
   })
   
@@ -57,7 +62,7 @@ shinyServer(function(input, output) {
     xlab4plottmp <- xlab4plot()
     gg <- dftmp %>% 
       ggplot(aes(x=x, y = 100 * Deaths/Confirmed, col = country)) +
-      geom_line()+  ylab("Death rate (%)") + xlab(xlab4plottmp)+ theme_bw()
+      geom_line()+  ylab("Death rate (%)") + xlab(xlab4plottmp)+ theme_bw() 
    gg
     
   })
@@ -66,13 +71,29 @@ shinyServer(function(input, output) {
     # generate an rnorm distribution and plot it
     dftmp <- df_dt_contrs()
     xlab4plottmp <- xlab4plot()
-    gg <- ggplot(dftmp, aes(x=x, y = doubling_time, col = country)) +
+    gg1 <- ggplot(dftmp, aes(x=x, y = doubling_time, col = country)) +
       geom_line() + ylab("doubling time (days)") +
       geom_vline(aes(xintercept = x_closure, col = country), lty = "dashed") +
       ggrepel::geom_text_repel(aes(x = x_closure, y= 5,
                                    label = ifelse(!is.na(date_closure) & date == date_closure,  country, ""))) +
       xlab(xlab4plottmp)+ theme_bw()
-   gg
+
+   gg1
   })
+
+  output$growth_rate <- renderPlot({
+    # generate an rnorm distribution and plot it
+    dftmp <- df_dt_contrs()
+    xlab4plottmp <- xlab4plot()
+    gg2 <- ggplot(dftmp, aes(x=x, y = growth_rate, col = country)) +
+      geom_line() + ylab("Daily growth rate") +
+      geom_vline(aes(xintercept = x_closure, col = country), lty = "dashed") +
+      ggrepel::geom_text_repel(aes(x = x_closure, y= 5,
+                                   label = ifelse(!is.na(date_closure) & date == date_closure,  country, ""))) +
+      xlab(xlab4plottmp)+ theme_bw()
+    
+    gg2
+  })
+  
 
 })

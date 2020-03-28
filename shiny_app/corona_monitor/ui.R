@@ -18,6 +18,8 @@ shinyUI(pageWithSidebar(
                 value = as.Date("2020-01-01")),
     checkboxInput("ds100",
                   "Time since 100 cases", FALSE),
+    checkboxInput("logscale",
+                  "Use log-scale (for number of deaths and confirmed cases)", FALSE),
     selectInput("cntrs", NULL , unique(df$country), selected = c("Germany", "Spain", "Italy", "UK", "US"), multiple = TRUE,
                 selectize = TRUE, width = NULL, size = NULL)
   ),
@@ -35,7 +37,9 @@ shinyUI(pageWithSidebar(
                          plotOutput("death_rate")
                 ),
                 tabPanel("Doubling time & school closures",
-                         plotOutput("doubling_time")
+                         plotOutput("doubling_time"),
+                         plotOutput("growth_rate")
+                         
                 )
   )
 )))
